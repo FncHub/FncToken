@@ -1,6 +1,10 @@
 # Compiler files
 cache/
 out/
+broadcast/
+.idea/
+.lib/
+.github/
 
 # Ignores development broadcast logs
 !/broadcast
