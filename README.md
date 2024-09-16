@@ -165,4 +165,14 @@ GNOSIS_SAFE_FACTORY_MATIC=0xEBF541Ad42f8d4D523D91316E7E391714A6ce489
 
 
 
+docker
+```
+docker build -t fncdev/foundry-blockchain:dev .
+docker push fncdev/foundry-blockchain:dev
+
+docker rm $(docker ps -a -q)
+docker rmi $(docker images -f "dangling=true" -q)
+```
+
+изменить git доступы
 

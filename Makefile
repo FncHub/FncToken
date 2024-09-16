@@ -46,11 +46,12 @@ help:
 		example: make deploy-safe NETWORK=amoy
 	@echo ""
 	@echo "  deploy-safe-proxy NETWORK={} SAFE_FACTORY_ADDRESS={} SAFE_SINGLETON_ADDRESS={} JSON_ADDRESSES={} REQUIRED_CONFIRMATIONS={}\n\
-		example: make deploy-safe-proxy NETWORK=amoy SAFE_FACTORY_ADDRESS=0x009E2a5a72097d0C0c4CC3562e44C9eA5737C856 SAFE_SINGLETON_ADDRESS=0x00 JSON_ADDRESSES='["0x1C3f50CA4f8b96fAa6ab1020D9C54a44ADfAc814", "0x0000000000000000000000000000000000000001"]' REQUIRED_CONFIRMATIONS=2
+		example: make deploy-safe-proxy NETWORK=amoy SAFE_FACTORY_ADDRESS=0x009E2a5a72097d0C0c4CC3562e44C9eA5737C856 SAFE_SINGLETON_ADDRESS=0xb08C0F2657329aB317286ca3Dcc23A5643e52CFa JSON_ADDRESSES='["0x1C3f50CA4f8b96fAa6ab1020D9C54a44ADfAc814","0x0000000000000000000000000000000000000001"]' REQUIRED_CONFIRMATIONS=2
 	@echo ""
 	@echo "  deploy-token NETWORK={} TOKEN_NAME={} TOKEN_SYMBOL={} TOKEN_SUPPLY={} SAFE={}\n\
 		example: make deploy-token NETWORK=amoy TOKEN_NAME=FNCToken TOKEN_SYMBOL=FNC TOKEN_SUPPLY=1000000000000000000000000000 SAFE=0x0000000000000000000000000000000000000001"
 	@echo ""
+
 
 # NETWORK ARGS
 # ----------------------------------------------------
@@ -71,13 +72,15 @@ deploy-safe-factory:
 	@forge script script/deployments/DeploySafeFactory.s.sol:DeploySafeFactory $(call DEPLOY_ARGS) $(call NETWORK_ARGS)
 
 deploy-safe:
-	@forge script script/DeploySafe.s.sol:DeploySafe $(call DEPLOY_ARGS) $(call NETWORK_ARGS)
+	@forge script script/deployments/DeploySafe.s.sol:DeploySafe $(call DEPLOY_ARGS) $(call NETWORK_ARGS)
 
 deploy-safe-proxy:
-	@forge script script/DeploySafeProxy.s.sol:DeploySafeProxy --sig "run(address,string,uint256)" $(SAFE_FACTORY_ADDRESS) $(JSON_ADDRESSES) $(REQUIRED_CONFIRMATIONS) $(NETWORK_ARGS)
+	@forge script script/DeploySafeProxy.s.sol:DeploySafeProxy --sig "run(address,address,string,uint256)" $(SAFE_FACTORY_ADDRESS) $(SAFE_SINGLETON_ADDRESS) $(JSON_ADDRESSES) $(REQUIRED_CONFIRMATIONS) $(NETWORK_ARGS)
 
 deploy-token:
 	@forge script script/deployments/DeployFNCToken.s.sol:DeployFNCToken --sig "run(string,string,uint256,address)" "$(TOKEN_NAME)" "$(TOKEN_SYMBOL)" "$(TOKEN_SUPPLY)" $(SAFE) $(call NETWORK_ARGS)
+
+
 
 
 # VERIFIES
