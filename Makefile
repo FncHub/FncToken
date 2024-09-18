@@ -16,10 +16,9 @@ MAX_PRIORITY_FEE_PER_GAS := 2500000000
 remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && touch .gitmodules && git add . && git commit -m "modules"
 
 # Install libraries
-install :
-			forge install OpenZeppelin/openzeppelin-contracts@v5.0.2 --no-commit && \
-			forge install ChainAccelOrg/foundry-devops --no-commit && \
-            forge install gnosis/safe-contracts --no-commit
+install :; forge install OpenZeppelin/openzeppelin-contracts@v5.0.2 --no-commit &&\
+			forge install ChainAccelOrg/foundry-devops --no-commit &&\
+			forge install gnosis/safe-contracts --no-commit
 
 # Test contracts on fork
 test :; FORK=true forge test --fork-url $(AMOY_RPC_URL) -vv
