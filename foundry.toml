@@ -3,7 +3,7 @@ src = "src"
 out = "out"
 libs = ["lib"]
 remappings = ["@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
-    "@gnosis.pm/safe-contracts/=lib/safe-contracts/"]
+    "@gnosis.pm/safe-contracts/contracts/=lib/safe-contracts/contracts/"]
 ffi = true
 [profile.solc]
 optimizer = true
