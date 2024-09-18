@@ -86,7 +86,7 @@ deploy-safe-proxy:
 	@forge script script/DeploySafeProxy.s.sol:DeploySafeProxy --sig "run(address,address,string,uint256)" $(SAFE_FACTORY_ADDRESS) $(SAFE_SINGLETON_ADDRESS) $(JSON_ADDRESSES) $(REQUIRED_CONFIRMATIONS) $(NETWORK_ARGS)
 
 deploy-token:
-	@forge script script/deployments/DeployFNCToken.s.sol:DeployFNCToken --sig "run(string,string,uint256,address)" $(TOKEN_NAME) $(TOKEN_SYMBOL) $(TOKEN_SUPPLY) $(call NETWORK_ARGS)
+	@forge script script/deployments/DeployFNCToken.s.sol:DeployFNCToken --sig "run(string,string,uint256)" $(TOKEN_NAME) $(TOKEN_SYMBOL) $(TOKEN_SUPPLY) $(call NETWORK_ARGS)
 
 
 # TOKEN METHODS
