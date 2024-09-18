@@ -94,7 +94,7 @@ ADMIN := 0x0000000000000000000000000000000000000000
 # ----------------------------------------------------
 
 token-transfer-admin-role:
-	@forge script script/interactions/FNCTokenInteractions.s.sol:TransferAdminRole $(NETWORK_ARGS) --sig "run(address,address)" $(CONTRACT) $(ADMIN) $(call NETWORK_ARGS)
+	@forge script script/interactions/FNCTokenInteractions.s.sol:TransferAdminRole --sig "run(address,address)" $(CONTRACT) $(ADMIN) $(call NETWORK_ARGS)
 
 
 
