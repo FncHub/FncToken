@@ -65,7 +65,6 @@ help:
 NETWORK_ARGS := --rpc-url http://localhost:8545 --private-key $(DEFAULT_ANVIL_KEY) --broadcast
 ifeq ($(NETWORK),amoy)
 	NETWORK_ARGS := --rpc-url $(AMOY_RPC_URL) --private-key $(DEPLOYER_PRIVATE_KEY) --broadcast -- --max-fee-per-gas $(MAX_FEE_PER_GAS) --max-priority-fee-per-gas $(MAX_PRIORITY_FEE_PER_GAS)
-	SAFE_FACTORY_ADDRESS := $(GNOSIS_SAFE_FACTORY_AMOY)
 endif
 # ----------------------------------------------------
 
@@ -74,6 +73,7 @@ endif
 JSON_ADDRESSES := []              # admin addresses
 REQUIRED_CONFIRMATIONS := 0       # the number of signatures required to accept a transaction
 DEPLOY_ARGS := --etherscan-api-key $(POLYGON_SCAN_API_KEY) --verify -vv
+SAFE_FACTORY_ADDRESS := $(GNOSIS_SAFE_FACTORY_AMOY)
 # ----------------------------------------------------
 deploy-safe-factory:
 	@forge script script/deployments/DeploySafeFactory.s.sol:DeploySafeFactory $(call DEPLOY_ARGS) $(call NETWORK_ARGS)
