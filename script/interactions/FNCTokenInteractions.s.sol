@@ -4,9 +4,9 @@ pragma solidity ^0.8.19;
 /**
  * Library Imports
  */
-import {Script, console} from "forge-std/Script.sol";
+import {Script} from "forge-std/Script.sol";
 import {FNCToken} from "../../src/FNCToken.sol";
-import "foundry-devops/src/DevOpsTools.sol";
+import {DevOpsTools} from "../../lib/foundry-devops/src/DevOpsTools.sol";
 import "../utils/Format.s.sol";
 
 /**
@@ -37,7 +37,6 @@ contract TransferAdminRole is Script {
             FNCToken(token).transferAdminRole(admin);
             vm.stopBroadcast();
         }
-        console.log("Admin role to %s", admin);
     }
 }
 
@@ -51,6 +50,7 @@ contract TransferAdminRoleLast is Script {
     /**
     */
     function run(address token, address admin) external {
+
         address mostRecentlyDeployed = DevOpsTools.get_most_recent_deployment("FNCToken", block.chainid);
         // Fetch the chain ID for the test environment
         uint256 _testChainId = Format.parseEnvStringToUint("TEST_CHAIN_ID", vm);
