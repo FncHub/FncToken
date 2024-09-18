@@ -21,7 +21,7 @@ contract TransferAdminRole is Script {
 
     /**
     */
-    function run(address token, uint256 admin) external {
+    function run(address token, address admin) external {
         // Fetch the chain ID for the test environment
         uint256 _testChainId = Format.parseEnvStringToUint("TEST_CHAIN_ID", vm);
 
