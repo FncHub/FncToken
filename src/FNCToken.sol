@@ -14,6 +14,7 @@ pragma solidity ^0.8.20;
  */
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "./IFNCToken.sol";
 
 // Custom Errors for gas optimization
 error OnlyAdmin();
@@ -28,7 +29,7 @@ error MaxSupplyExceeded();
  * with the MINTER_ROLE, and each minter has an associated minting limit to prevent over-minting. The total supply is capped by a predefined max supply.
  * The admin role can be transferred to another address (e.g., a Gnosis Safe multisig) to decentralize control over the token.
  */
-contract FNCToken is ERC20, AccessControl {
+contract FNCToken is ERC20, AccessControl, IFNCToken {
 
     // Role Definitions
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -81,6 +82,8 @@ contract FNCToken is ERC20, AccessControl {
 
         s_mintedAmounts[msg.sender] += amount;
         _mint(to, amount);
+
+        emit TokensMinted(to, amount);
     }
 
     /**
@@ -95,6 +98,8 @@ contract FNCToken is ERC20, AccessControl {
         }
         grantRole(MINTER_ROLE, account);
         s_mintLimits[account] = limit;
+
+        emit MinterRoleGranted(account, limit);
     }
 
     /**
@@ -109,6 +114,8 @@ contract FNCToken is ERC20, AccessControl {
         }
         require(hasRole(MINTER_ROLE, account), "Account is not a minter");
         s_mintLimits[account] = newLimit;
+
+        emit MintLimitUpdated(account, newLimit);
     }
 
     /**
@@ -123,6 +130,8 @@ contract FNCToken is ERC20, AccessControl {
         revokeRole(MINTER_ROLE, account);
         s_mintLimits[account] = 0;
         s_mintedAmounts[account] = 0;
+
+        emit MinterRoleRevoked(account);
     }
 
     /**
@@ -138,6 +147,8 @@ contract FNCToken is ERC20, AccessControl {
             revert InsufficientBalance();
         }
         _burn(address(this), amount);
+
+        emit TokensBurned(amount);
     }
 
     /**
@@ -151,5 +162,7 @@ contract FNCToken is ERC20, AccessControl {
         }
         _grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
         _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
+        emit AdminRoleTransferred(msg.sender, newAdmin);
     }
 }
