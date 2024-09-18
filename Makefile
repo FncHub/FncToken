@@ -17,7 +17,6 @@ remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && touch .gi
 
 # Install libraries
 install :; forge install OpenZeppelin/openzeppelin-contracts@v5.0.2 --no-commit &&\
-			forge install ChainAccelOrg/foundry-devops --no-commit &&\
 			forge install gnosis/safe-contracts --no-commit
 
 # Test contracts on fork
