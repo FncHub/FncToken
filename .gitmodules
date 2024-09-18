@@ -7,3 +7,6 @@
 [submodule "lib/safe-contracts"]
 	path = lib/safe-contracts
 	url = https://github.com/gnosis/safe-contracts
+[submodule "lib/foundry-devops"]
+	path = lib/foundry-devops
+	url = https://github.com/ChainAccelOrg/foundry-devops
