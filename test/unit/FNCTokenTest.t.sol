@@ -16,6 +16,7 @@ import {SafeProxy} from "@gnosis.pm/safe-contracts/contracts/proxies/SafeProxy.s
 import {SafeProxyFactory} from "@gnosis.pm/safe-contracts/contracts/proxies/SafeProxyFactory.sol";
 // Utility for encoding/decoding JSON addresses
 import "../../script/utils/EncodeDecode.s.sol";
+import "../../script/utils/Format.s.sol";
 
 
 /**
@@ -308,7 +309,7 @@ contract FNCTokenTest is Test {
             payable(address(0)), // refundReceiver
             _safeContract.nonce()
         );
-
+        console.log("Data: ", Format.bytes32ToHexString(txHash));
         // Get valid signatures
         bytes memory _signatures = getSignatures(txHash, admins, privateKeys);
 
