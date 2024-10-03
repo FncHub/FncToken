@@ -10,4 +10,4 @@ lib/
 docs/
 
 # Dotenv file
-# .env
+.env

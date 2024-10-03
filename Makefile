@@ -1,5 +1,6 @@
 
 -include .env
+-include .config
 
 .PHONY: all test clean deploy fund help install snapshot format anvil
 
