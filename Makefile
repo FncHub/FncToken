@@ -70,6 +70,9 @@ NETWORK_ARGS := --rpc-url http://localhost:8545 --private-key $(DEFAULT_ANVIL_KE
 ifeq ($(NETWORK),amoy)
 	NETWORK_ARGS := --rpc-url $(AMOY_RPC_URL) --private-key $(DEPLOYER_PRIVATE_KEY) --broadcast -- --max-fee-per-gas $(MAX_FEE_PER_GAS) --max-priority-fee-per-gas $(MAX_PRIORITY_FEE_PER_GAS)
 endif
+ifeq ($(NETWORK),polygon)
+	NETWORK_ARGS := --rpc-url $(POLYGON_RPC_URL) --private-key $(DEPLOYER_PRIVATE_KEY) --broadcast -- --max-fee-per-gas $(MAX_FEE_PER_GAS) --max-priority-fee-per-gas $(MAX_PRIORITY_FEE_PER_GAS)
+endif
 # ----------------------------------------------------
 
 # DEPLOYS
@@ -90,7 +93,6 @@ deploy-safe-proxy:
 
 deploy-token:
 	@forge script script/deployments/DeployFNCToken.s.sol:DeployFNCToken --sig "run(string,string,uint256)" $(TOKEN_NAME) $(TOKEN_SYMBOL) $(TOKEN_SUPPLY) $(call DEPLOY_ARGS) $(call NETWORK_ARGS)
-
 
 # TOKEN METHODS
 # ----------------------------------------------------
@@ -120,6 +122,10 @@ ADDRESS := 0x0000000000000000000000000000000000000000
 INIT_DATA := "$(shell cast abi-encode 'constructor(string,string,uint256,address)' '$(TOKEN_NAME)' '$(TOKEN_SYMBOL)' $(TOKEN_SUPPLY) $(OWNER_ADDRESS))"
 VERIFIES_ARGS := --watch
 ifeq ($(NETWORK),amoy)
+	TOKEN_ARGS += --constructor-args $(INIT_DATA) --etherscan-api-key $(POLYGON_SCAN_API_KEY) --compiler-version v0.8.19+commit.7dd6d404 --chain-id '$(DEFAULT_CHAIN_ID)' $(ADDRESS) src/token/Token.sol:Token
+endif
+
+ifeq ($(NETWORK),polygon)
 	TOKEN_ARGS += --constructor-args $(INIT_DATA) --etherscan-api-key $(POLYGON_SCAN_API_KEY) --compiler-version v0.8.19+commit.7dd6d404 --chain-id '$(DEFAULT_CHAIN_ID)' $(ADDRESS) src/token/Token.sol:Token
 endif
 verify-token:
