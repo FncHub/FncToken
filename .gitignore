@@ -9,5 +9,4 @@ lib/
 # Docs
 docs/
 
-# Dotenv file
-.env
+
