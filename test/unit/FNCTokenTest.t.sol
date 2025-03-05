@@ -31,13 +31,15 @@ contract FNCTokenTest is Test {
     Safe s_safeSingleton;
     SafeProxyFactory s_safeFactory;
     address s_safe;
+
     uint256 s_maxSupply = 1000000000 * 10**18;
     uint256 s_requiredConfirmations = 2;
 
-    // Addresses for key roles in the test
     address s_deployer = vm.addr(1);
     address s_minter = vm.addr(2);
     address s_user = vm.addr(3);
+    address s_burner = vm.addr(4);
+
     address s_adminFirst;
     address s_adminSecond;
     address s_adminThird;
@@ -151,19 +153,24 @@ contract FNCTokenTest is Test {
     }
 
     /**
-     * @dev Tests revoking the minter role from an address. After the role is revoked, minting should revert.
+     * @dev Tests the process of assigning the burner role to an address.
+     *      Ensures that multiple signatures are required to complete a transaction, and tests both success and failure scenarios.
      */
-    function testRevokeMinterRole() external {
-        // Step 1: Grant the minter role
-        testGrantMinterRoleTokens();
-
-        // Step 2: Prepare data for revokeMinterRole function
+    function testGrantBurnerRole() public {
         bytes memory _data = abi.encodeWithSelector(
-            s_token.revokeMinterRole.selector,
-            s_minter
+            s_token.grantBurnerRole.selector,
+            s_burner
         );
 
-        // Execute transaction with two signatures to revoke the minter role
+        // Check with one signature (should revert)
+        address[] memory _singleAdmin = new address[](1);
+        _singleAdmin[0] = s_adminFirst;
+        uint256[] memory _singleKey = new uint256[](1);
+        _singleKey[0] = s_adminFirstPrivateKey;
+        string memory revertWith = "GS020";
+        executeTransactionRevertWith(_data, _singleAdmin, _singleKey, revertWith);
+
+        // Check with two signatures (should succeed)
         address[] memory _twoAdmins = new address[](2);
         _twoAdmins[0] = s_adminFirst;
         _twoAdmins[1] = s_adminSecond;
@@ -172,77 +179,58 @@ contract FNCTokenTest is Test {
         _twoKeys[1] = s_adminSecondPrivateKey;
         executeTransaction(_data, _twoAdmins, _twoKeys);
 
-        // Step 3: Ensure that the minter role is revoked and limits are reset
-        assertEq(s_token.hasRole(s_token.MINTER_ROLE(), s_minter), false);
-        assertEq(s_token.s_mintLimits(s_minter), 0);
-        assertEq(s_token.s_mintedAmounts(s_minter), 0);
-
-        // Step 4: Verify that minting now reverts
-        vm.startPrank(s_minter);
-        vm.expectRevert(abi.encodeWithSignature("OnlyMinter()"));
-        s_token.mint(s_user, 100 * 10**18);
-        vm.stopPrank();
+        assertTrue(s_token.hasRole(s_token.BURNER_ROLE(), s_burner));
     }
 
     /**
-     * @dev Tests updating the mint limit for a minter. Ensures that the limit can be increased
-     *      and that the minter can mint up to the new limit.
+     * @dev Tests the process of burning tokens from the burner balance.
+     *      Makes sure that the burning works correctly and checks the limits.
      */
-    function testUpdateMintLimit() external {
-        // Step 1: Grant the minter role
+    function testBurnTokensFromBurner() external {
+        // Step 1: Assign the burner role
+        testGrantBurnerRole();
+
+        // Step 2: Grant minter role to mint tokens to burner
         testGrantMinterRoleTokens();
 
-        // Step 2: Prepare data for updateMintLimit function
-        bytes memory _data = abi.encodeWithSelector(
-            s_token.updateMintLimit.selector,
-            s_minter,
-            1000 * 10**18
-        );
-
-        // Execute transaction with two signatures to update the mint limit
-        address[] memory _twoAdmins = new address[](2);
-        _twoAdmins[0] = s_adminFirst;
-        _twoAdmins[1] = s_adminSecond;
-        uint256[] memory _twoKeys = new uint256[](2);
-        _twoKeys[0] = s_adminFirstPrivateKey;
-        _twoKeys[1] = s_adminSecondPrivateKey;
-        executeTransaction(_data, _twoAdmins, _twoKeys);
-
-        // Step 3: Check that the mint limit has been increased
-        assertEq(s_token.s_mintLimits(s_minter), 1000 * 10**18);
-
-        // Step 4: Minter mints tokens up to the increased limit
+        // Step 3: Transfer tokens to the burner address
         vm.startPrank(s_minter);
-        s_token.mint(s_user, 1000 * 10**18); // Mint 1000 tokens
+        s_token.mint(s_burner, 500 * 10**18);
         vm.stopPrank();
 
-        // Verify user balance
-        assertEq(s_token.balanceOf(s_user), 1000 * 10**18);
+        // Checking the balance of the burner
+        assertEq(s_token.balanceOf(s_burner), 500 * 10**18);
+
+        // Step 4: The burner burns tokens from its balance
+        vm.startPrank(s_burner);
+        s_token.burn(300 * 10**18);
+        vm.stopPrank();
+
+        // Step 5: Check that the tokens have been burned
+        assertEq(s_token.balanceOf(s_burner), 200 * 10**18);
+
+        // Step 6: Check the balance limit
+        vm.startPrank(s_burner);
+        vm.expectRevert(abi.encodeWithSignature("InsufficientBalance()"));
+        s_token.burn(500 * 10**18);
+        vm.stopPrank();
     }
+
 
     /**
-     * @dev Tests the process of burning tokens from the contract address.
-     *      It ensures that only the contract address can burn tokens.
+     * @dev Tests revocation of the burner role from an address. After revocation of the role, burning should be rejected.
      */
-    function testBurnTokens() external {
-        // Step 1: Grant the minter role
-        testGrantMinterRoleTokens();
+    function testRevokeBurnerRole() external {
+        // Step 1: Assign the burner role
+        testGrantBurnerRole();
 
-        // Step 2: Mint tokens to the contract
-        vm.startPrank(s_minter);
-        s_token.mint(address(s_token), 500 * 10**18); // Mint 500 tokens to the contract
-        vm.stopPrank();
-
-        // Verify contract balance
-        assertEq(s_token.balanceOf(address(s_token)), 500 * 10**18);
-
-        // Step 3: Prepare data for burn function
+        // Step 2: Prepare data for the revokeBurnerRole function
         bytes memory _data = abi.encodeWithSelector(
-            s_token.burn.selector,
-            300 * 10**18 // Burn 300 tokens
+            s_token.revokeBurnerRole.selector,
+            s_burner
         );
 
-        // Execute transaction with two signatures to burn tokens
+        // Execute transaction with two signatures to revoke the burner role
         address[] memory _twoAdmins = new address[](2);
         _twoAdmins[0] = s_adminFirst;
         _twoAdmins[1] = s_adminSecond;
@@ -251,9 +239,16 @@ contract FNCTokenTest is Test {
         _twoKeys[1] = s_adminSecondPrivateKey;
         executeTransaction(_data, _twoAdmins, _twoKeys);
 
-        // Step 4: Verify that the tokens have been burned
-        assertEq(s_token.balanceOf(address(s_token)), 200 * 10**18); // 200 tokens left
+        // Step 3: Make sure the burner role is revoked
+        assertFalse(s_token.hasRole(s_token.BURNER_ROLE(), s_burner));
+
+        // Step 4: Check that burning now reverts
+        vm.startPrank(s_burner);
+        vm.expectRevert(abi.encodeWithSignature("OnlyBurner()"));
+        s_token.burn(100 * 10**18);
+        vm.stopPrank();
     }
+
 
     /**
      * @dev Tests transferring the admin role to a new address.

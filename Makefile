@@ -52,6 +52,9 @@ help:
 	@echo "  deploy-token NETWORK={} TOKEN_NAME={} TOKEN_SYMBOL={} TOKEN_SUPPLY={}\n\
 		example: make deploy-token NETWORK=amoy TOKEN_NAME=FNCToken TOKEN_SYMBOL=FNC TOKEN_SUPPLY=1000000000000000000000000000
 	@echo ""
+	@echo "  deploy-deploy-vesting NETWORK={} BENEFICIARY={} START={} CLIFF={} VESTING_DURATION={} TOTAL_AMOUNT={}\n\
+	    example: make deploy-vesting NETWORK=amoy TOKEN=0x09cf5AA2329945E6535831d59D9DA205EA9D80C9 BENEFICIARY=0x164E57ba98c44777E2e76f98E007521409C6d491 START=1697366400 CLIFF=15552000 VESTING_DURATION=31104000 TOTAL_AMOUNT=40000000000000000000000000
+	@echo ""
 	@echo "|------- TOKEN METHODS -------"
 	@echo ""
 	@echo "  token-transfer-admin-role NETWORK={} CONTRACT={} ADMIN={}\n\
@@ -78,6 +81,12 @@ endif
 # DEPLOYS
 # ----------------------------------------------------
 JSON_ADDRESSES := []              # admin addresses
+TOKEN := 0x0000000000000000000000000000000000000000
+BENEFICIARY := 0x0000000000000000000000000000000000000000
+START := 0
+CLIFF := 0
+VESTING_DURATION := 0
+TOKEN_SUPPLY := 0
 REQUIRED_CONFIRMATIONS := 0       # the number of signatures required to accept a transaction
 DEPLOY_ARGS := --etherscan-api-key $(POLYGON_SCAN_API_KEY) --verify -vv
 SAFE_FACTORY_ADDRESS := $(GNOSIS_SAFE_FACTORY_AMOY)
@@ -93,6 +102,10 @@ deploy-safe-proxy:
 
 deploy-token:
 	@forge script script/deployments/DeployFNCToken.s.sol:DeployFNCToken --sig "run(string,string,uint256)" $(TOKEN_NAME) $(TOKEN_SYMBOL) $(TOKEN_SUPPLY) $(call DEPLOY_ARGS) $(call NETWORK_ARGS)
+
+deploy-vesting:
+	@forge script script/deployments/DeployVesting.s.sol:DeployVesting --sig "run(address,address,uint64,uint64,uint64,uint256)" $(TOKEN) $(BENEFICIARY) $(START) $(CLIFF) $(VESTING_DURATION) $(TOTAL_AMOUNT) $(call DEPLOY_ARGS) $(call NETWORK_ARGS)
+
 
 # TOKEN METHODS
 # ----------------------------------------------------

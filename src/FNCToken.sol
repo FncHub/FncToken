@@ -4,9 +4,12 @@ pragma solidity ^0.8.20;
 /**
  * @title FNCToken
  * @author UrukHan
- * @notice This contract implements an ERC20 token with role-based access control for minting, minting limits per minter, and a fixed maximum supply.
- * The contract uses the Gnosis Safe multisig for admin control and role management, ensuring secure and decentralized control over minting operations.
- * Admins have the ability to grant and revoke minter roles, update minting limits, and transfer the admin role to other addresses.
+ * @notice This contract extends the ERC20 token standard with:
+ * - A fixed maximum supply (s_maxSupply)
+ * - Role-based access control (MINTER_ROLE, BURNER_ROLE, and DEFAULT_ADMIN_ROLE)
+ * - Each minter has a one-time limit. Once assigned, the tokens are "reserved".
+ * - Minter limits + totalAssigned cannot exceed maxSupply.
+ * - No revocation or update of minter limits is allowed (for fairness).
  */
 
 /**
@@ -18,10 +21,13 @@ import "./IFNCToken.sol";
 
 // Custom Errors for gas optimization
 error OnlyAdmin();
+error OnlyBurner();
 error OnlyMinter();
 error MintLimitExceeded(uint256 limit, uint256 requested);
 error InsufficientBalance();
 error MaxSupplyExceeded();
+error NotEnoughUnreservedSupply(uint256 requested, uint256 available);
+
 
 /**
  * @title FNCToken
@@ -33,11 +39,13 @@ contract FNCToken is ERC20, AccessControl, IFNCToken {
 
     // Role Definitions
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
     // Minting Limits and Max Supply
     uint256 public immutable s_maxSupply;
     mapping(address => uint256) public s_mintLimits;
     mapping(address => uint256) public s_mintedAmounts;
+    uint256 public s_totalAssigned;
     address public s_admin;
 
     /**
@@ -60,9 +68,9 @@ contract FNCToken is ERC20, AccessControl, IFNCToken {
     /////////////////////
 
     /**
-     * @dev Mints new tokens to the specified address, with a check on the max supply.
-     * Can only be called by accounts with the MINTER_ROLE and within their minting limit.
-     * @param to The address receiving the newly minted tokens.
+     * @dev Mints new tokens to the specified address, respecting both
+     * the minter's personal limit and the global max supply.
+     * @param to The address receiving newly minted tokens.
      * @param amount The number of tokens to mint.
      */
     function mint(address to, uint256 amount) public {
@@ -87,76 +95,69 @@ contract FNCToken is ERC20, AccessControl, IFNCToken {
     }
 
     /**
-     * @dev Grants the MINTER_ROLE to a specified account with a minting limit.
-     * Can only be called by the Gnosis Safe admin contract.
-     * @param account The address to grant the MINTER_ROLE.
-     * @param limit The maximum number of tokens this minter is allowed to mint.
+     * @dev Grants the MINTER_ROLE to a specified account and "reserves" tokens for it.
+     *      Once assigned, the limit cannot be revoked or updated.
+     * @param account The minter address.
+     * @param limit The maximum tokens this minter may mint.
      */
     function grantMinterRoleWithLimit(address account, uint256 limit) public {
         if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
             revert OnlyAdmin();
         }
-        grantRole(MINTER_ROLE, account);
+        if (s_totalAssigned + limit > s_maxSupply) {
+            revert NotEnoughUnreservedSupply(limit, s_maxSupply - s_totalAssigned);
+        }
+        _grantRole(MINTER_ROLE, account);
         s_mintLimits[account] = limit;
-
+        s_totalAssigned += limit;
         emit MinterRoleGranted(account, limit);
     }
 
     /**
-     * @dev Updates the minting limit for an existing minter.
-     * Can only be called by the Gnosis Safe admin contract.
-     * @param account The minter's address.
-     * @param newLimit The new minting limit for this minter.
+     * @dev Grants the BURNER_ROLE to a specified account, enabling burn().
+     * @param account The address to become burner.
      */
-    function updateMintLimit(address account, uint256 newLimit) public {
+    function grantBurnerRole(address account) external {
         if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
             revert OnlyAdmin();
         }
-        require(hasRole(MINTER_ROLE, account), "Account is not a minter");
-        s_mintLimits[account] = newLimit;
-
-        emit MintLimitUpdated(account, newLimit);
+        _grantRole(BURNER_ROLE, account);
+        emit BurnerRoleGranted(account);
     }
 
     /**
-     * @dev Revokes the MINTER_ROLE and resets the minting limit for a specific account.
-     * Can only be called by the Gnosis Safe admin contract.
-     * @param account The address whose MINTER_ROLE will be revoked.
+     * @dev Revokes the BURNER_ROLE from an account.
+     * @param account The address losing burner status.
      */
-    function revokeMinterRole(address account) public {
+    function revokeBurnerRole(address account) external {
         if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
             revert OnlyAdmin();
         }
-        revokeRole(MINTER_ROLE, account);
-        s_mintLimits[account] = 0;
-        s_mintedAmounts[account] = 0;
-
-        emit MinterRoleRevoked(account);
+        _revokeRole(BURNER_ROLE, account);
+        emit BurnerRoleRevoked(account);
     }
 
+
     /**
-     * @dev Burns tokens.
-     * Can only be called by the Gnosis Safe admin contract.
+     * @dev Burns tokens from the caller. Caller must have BURNER_ROLE.
      * @param amount The number of tokens to burn.
      */
-    function burn(uint256 amount) public {
-        if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
-            revert OnlyAdmin();
+    function burn(uint256 amount) external {
+        if (!hasRole(BURNER_ROLE, msg.sender)) {
+            revert OnlyBurner();
         }
-        if (balanceOf(address(this)) < amount) {
+        if (balanceOf(msg.sender) < amount) {
             revert InsufficientBalance();
         }
-        _burn(address(this), amount);
-
-        emit TokensBurned(amount);
+        _burn(msg.sender, amount);
+        emit TokensBurned(msg.sender, amount);
     }
 
     /**
-     * @dev Transfers admin role to a new address, such as a Gnosis Safe.
-     * Can only be called by the current admin.
-     * @param newAdmin The address of the new admin (e.g., Gnosis Safe).
+     * @dev Transfers the admin role (DEFAULT_ADMIN_ROLE) to a new address (e.g. Gnosis Safe).
+     * @param newAdmin The address of the new admin.
      */
-    function transferAdminRole(address newAdmin) public {
+    function transferAdminRole(address newAdmin) external {
         if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
             revert OnlyAdmin();
         }
