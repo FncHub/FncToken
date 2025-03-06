@@ -37,7 +37,7 @@ contract Vesting {
     uint64 private immutable s_start;
     uint64 private immutable s_cliff;
     uint64 private immutable s_duration;
-    uint64 private immutable s_end = s_start + s_duration;
+    uint64 private immutable s_end;
 
     // Events
     event TokensReleased(uint256 amount);
@@ -71,6 +71,7 @@ contract Vesting {
         s_start = startTimestamp;
         s_cliff = startTimestamp + cliffDurationSeconds;
         s_duration = vestingDurationSeconds;
+        s_end = startTimestamp + vestingDurationSeconds;
         s_totalAmount = totalAmount;
     }
 
