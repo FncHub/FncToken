@@ -104,13 +104,19 @@ contract FNCToken is ERC20, AccessControl, IFNCToken {
         if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
             revert OnlyAdmin();
         }
+
+        uint256 previousLimit = s_mintLimits[account];
+        uint256 newLimit = previousLimit + limit;
+
         if (s_totalAssigned + limit > s_maxSupply) {
             revert NotEnoughUnreservedSupply(limit, s_maxSupply - s_totalAssigned);
         }
+
         _grantRole(MINTER_ROLE, account);
-        s_mintLimits[account] = limit;
+        s_mintLimits[account] = newLimit;
         s_totalAssigned += limit;
-        emit MinterRoleGranted(account, limit);
+
+        emit MinterRoleGranted(account, newLimit);
     }
 
     /**
