@@ -4,7 +4,9 @@
 FNC is the native token of a decentralized ecosystem for betting, casino, and mini-games. The ecosystem integrates smart contracts with Gnosis Safe multisignature wallets to ensure secure governance and transactions. FNC's tokenomics is designed to facilitate seamless operations within the ecosystem, providing users with a secure and efficient token for various activities.
 
 ---
-![plot](Logo.png)
+<p align="center">
+  <img src="Logo.webp" alt="plot" width="368" height="368">
+</p>
 
 ---
 # Project structure
